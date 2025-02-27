@@ -1,10 +1,10 @@
 [workspace]
-members = ["packages/*"]
+members = ["packages/runtime", "packages/startup"]
 default-members = [
     "packages/runtime",
     "packages/startup",
-    "packages/wasm3",
-    "packages/wasm3-sys",
+#    "packages/wasm3",
+#    "packages/wasm3-sys",
 ]
 exclude = ["wasm3-rs"]
 resolver = "2"

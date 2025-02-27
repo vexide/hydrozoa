@@ -16,10 +16,8 @@ compress = true
 vexide.workspace = true
 vex-sdk.workspace = true
 vexide_wasm_startup = { version = "0.1.0", path = "../startup" }
-wasm3 = { path = "../wasm3", features = [
-    "build-bindgen",
-], default-features = false }
 hashbrown = "0.15.1"
 printf-compat = { version = "0.1.1", default-features = false }
 bytemuck = "1.19.0"
 anyhow = { version = "1.0.93", default-features = false }
+wamr-rust-sdk = { git = "https://github.com/doinkythederp/wamr-rust-sdk.git", branch = "feat/vexos-target", default-features = false }
