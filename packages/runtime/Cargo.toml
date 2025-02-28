@@ -5,6 +5,12 @@ edition = "2021"
 
 [[bin]]
 name = "hydrozoa"
+test = false
+bench = false
+
+[lib]
+test = false
+bench = false
 
 # These fields configure default behavior for uploads with `cargo v5`.
 [package.metadata.v5]

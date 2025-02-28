@@ -68,9 +68,10 @@ impl CodeSignature {
 }
 
 unsafe extern "C" {
-    // These symbols don't have real types, so this is a little bit of a hack.
-    static mut __bss_start: usize;
-    static mut __bss_end: usize;
+    static mut __heap_start: u8;
+    static mut __heap_end: u8;
+    static mut __bss_start: u32;
+    static mut __bss_end: u32;
 }
 
 // This is the true entrypoint of vexide, containing the first two
@@ -140,6 +141,9 @@ pub unsafe fn startup() {
         );
 
         // Initialize the heap allocator
-        vexide::core::allocator::init_heap();
+        vexide::core::allocator::claim(
+            core::ptr::addr_of_mut!(__heap_start),
+            core::ptr::addr_of_mut!(__heap_end),
+        );
     }
 }

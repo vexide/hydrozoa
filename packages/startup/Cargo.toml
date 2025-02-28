@@ -3,6 +3,10 @@ name = "vexide_wasm_startup"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+test = false
+bench = false
+
 [dependencies]
 bitflags = { version = "2.6.0", default-features = false }
 vexide.workspace = true

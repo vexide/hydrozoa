@@ -3,10 +3,7 @@ members = ["packages/runtime", "packages/startup"]
 default-members = [
     "packages/runtime",
     "packages/startup",
-#    "packages/wasm3",
-#    "packages/wasm3-sys",
 ]
-exclude = ["wasm3-rs"]
 resolver = "2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -16,9 +13,9 @@ debug = true
 lto = true
 
 [workspace.dependencies]
-vex-sdk = "0.23.0"
+vex-sdk = "0.26.0"
 
 [workspace.dependencies.vexide]
-version = "0.5.1"
+version = "0.6.1"
 default-features = false
 features = ["core", "devices", "panic", "display_panics"]

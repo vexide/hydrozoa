@@ -10,6 +10,129 @@ use vexide::core::{
     sync::{LazyLock, Mutex},
 };
 
+// TODO
+// rust-lld: error: undefined symbol: os_mutex_destroy
+// >>> referenced by bh_vector.c:273 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/shared/utils\bh_vector.c:273)
+// >>>               bh_vector.c.obj:(bh_vector_destroy) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by bh_hashmap.c:284 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/shared/utils\bh_hashmap.c:284)
+// >>>               bh_hashmap.c.obj:(bh_hash_map_destroy) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by ems_kfc.c:174 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/shared/mem-alloc/ems\ems_kfc.c:174)
+// >>>               ems_kfc.c.obj:(gc_destroy_with_pool) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced 2 more times
+// 
+// rust-lld: error: undefined symbol: os_thread_jit_write_protect_np
+// >>> referenced by aot_loader.c:4398 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/aot\aot_loader.c:4398)
+// >>>               aot_loader.c.obj:(aot_load_from_aot_file) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by aot_loader.c:4404 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/aot\aot_loader.c:4404)
+// >>>               aot_loader.c.obj:(aot_load_from_aot_file) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// 
+// rust-lld: error: undefined symbol: bsearch
+// >>> referenced by aot_runtime.c:2297 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/aot\aot_runtime.c:2297)
+// >>>               aot_runtime.c.obj:(aot_lookup_function) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by wasm_native.c:191 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/common\wasm_native.c:191)
+// >>>               wasm_native.c.obj:(lookup_symbol) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by wasm_native.c:1524 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/common\wasm_native.c:1524)
+// >>>               wasm_native.c.obj:(wasm_native_lookup_quick_aot_entry) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// 
+// rust-lld: error: undefined symbol: os_mutex_init
+// >>> referenced by bh_hashmap.c:66 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/shared/utils\bh_hashmap.c:66)
+// >>>               bh_hashmap.c.obj:(bh_hash_map_create) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by ems_kfc.c:17 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/shared/mem-alloc/ems\ems_kfc.c:17)
+// >>>               ems_kfc.c.obj:(gc_init_internal) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by wasm_runtime_common.c:6300 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/common\wasm_runtime_common.c:6300)
+// >>>               wasm_runtime_common.c.obj:(wasm_externref_map_init) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// 
+// rust-lld: error: undefined symbol: os_mutex_lock
+// >>> referenced by bh_hashmap.c:93 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/shared/utils\bh_hashmap.c:93)
+// >>>               bh_hashmap.c.obj:(bh_hash_map_insert) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by bh_hashmap.c:141 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/shared/utils\bh_hashmap.c:141)
+// >>>               bh_hashmap.c.obj:(bh_hash_map_find) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by bh_hashmap.c:262 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/shared/utils\bh_hashmap.c:262)
+// >>>               bh_hashmap.c.obj:(bh_hash_map_destroy) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced 6 more times
+// 
+// rust-lld: error: undefined symbol: os_mutex_unlock
+// >>> referenced by bh_hashmap.c:117 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/shared/utils\bh_hashmap.c:117)
+// >>>               bh_hashmap.c.obj:(bh_hash_map_insert) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by bh_hashmap.c:123 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/shared/utils\bh_hashmap.c:123)
+// >>>               bh_hashmap.c.obj:(bh_hash_map_insert) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by bh_hashmap.c:151 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/shared/utils\bh_hashmap.c:151)
+// >>>               bh_hashmap.c.obj:(bh_hash_map_find) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced 13 more times
+// 
+// rust-lld: error: undefined symbol: os_thread_get_stack_boundary
+// >>> referenced by wasm_exec_env.c:279 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/common\wasm_exec_env.c:279)
+// >>>               wasm_exec_env.c.obj:(wasm_exec_env_set_thread_info) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// 
+// rust-lld: error: undefined symbol: os_self_thread
+// >>> referenced by wasm_exec_env.c:284 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/common\wasm_exec_env.c:284)
+// >>>               wasm_exec_env.c.obj:(wasm_exec_env_set_thread_info) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by bh_log.c:33 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/shared/utils\bh_log.c:33)
+// >>>               bh_log.c.obj:(bh_log) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// 
+// rust-lld: error: undefined symbol: strchr
+// >>> referenced by libc_builtin_wrapper.c:586 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/libraries/libc-builtin\libc_builtin_wrapper.c:586)
+// >>>               libc_builtin_wrapper.c.obj:(strchr_wrapper) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// 
+// rust-lld: error: undefined symbol: qsort
+// >>> referenced by wasm_native.c:283 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/common\wasm_native.c:283)
+// >>>               wasm_native.c.obj:(register_natives) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by wasm_native.c:1479 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/common\wasm_native.c:1479)
+// >>>               wasm_native.c.obj:(quick_aot_entry_init) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by aot_runtime.c:1492 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/aot\aot_runtime.c:1492)
+// >>>               aot_runtime.c.obj:(create_export_funcs) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced 1 more times
+// 
+// rust-lld: error: undefined symbol: strncpy
+// >>> referenced by libc_builtin_wrapper.c:623 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/libraries/libc-builtin\libc_builtin_wrapper.c:623)
+// >>>               libc_builtin_wrapper.c.obj:(strcpy_wrapper) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by libc_builtin_wrapper.c:641 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/libraries/libc-builtin\libc_builtin_wrapper.c:641)
+// >>>               libc_builtin_wrapper.c.obj:(strncpy_wrapper) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// 
+// rust-lld: error: undefined symbol: malloc
+// >>> referenced by vexos_platform.c:23 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/shared/platform/vexos\vexos_platform.c:23)
+// >>>               vexos_platform.c.obj:(os_malloc) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// 
+// rust-lld: error: undefined symbol: strncmp
+// >>> referenced by libc_builtin_wrapper.c:609 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/libraries/libc-builtin\libc_builtin_wrapper.c:609)
+// >>>               libc_builtin_wrapper.c.obj:(strncmp_wrapper) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by aot_loader.c:3843 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/aot\aot_loader.c:3843)
+// >>>               aot_loader.c.obj:(load_relocation_section) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by aot_loader.c:3846 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/aot\aot_loader.c:3846)
+// >>>               aot_loader.c.obj:(load_relocation_section) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced 12 more times
+// 
+// rust-lld: error: undefined symbol: vexos_dcache_invalidate
+// >>> referenced by vexos_platform.c:83 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/shared/platform/vexos\vexos_platform.c:83)
+// >>>               vexos_platform.c.obj:(os_dcache_flush) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// 
+// rust-lld: error: undefined symbol: vexos_icache_invalidate
+// >>> referenced by vexos_platform.c:89 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/shared/platform/vexos\vexos_platform.c:89)
+// >>>               vexos_platform.c.obj:(os_icache_flush) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// 
+// rust-lld: error: undefined symbol: atoi
+// >>> referenced by libc_builtin_wrapper.c:710 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/libraries/libc-builtin\libc_builtin_wrapper.c:710)
+// >>>               libc_builtin_wrapper.c.obj:(atoi_wrapper) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// >>> referenced by aot_loader.c:3133 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/aot\aot_loader.c:3133)
+// >>>               aot_loader.c.obj:(do_text_relocation) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// 
+// rust-lld: error: undefined symbol: strtol
+// >>> referenced by libc_builtin_wrapper.c:733 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/libraries/libc-builtin\libc_builtin_wrapper.c:733)
+// >>>               libc_builtin_wrapper.c.obj:(strtol_wrapper) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// 
+// rust-lld: error: undefined symbol: strtoul
+// >>> referenced by libc_builtin_wrapper.c:750 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/libraries/libc-builtin\libc_builtin_wrapper.c:750)
+// >>>               libc_builtin_wrapper.c.obj:(strtoul_wrapper) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// 
+// rust-lld: error: undefined symbol: memchr
+// >>> referenced by libc_builtin_wrapper.c:765 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/libraries/libc-builtin\libc_builtin_wrapper.c:765)
+// >>>               libc_builtin_wrapper.c.obj:(memchr_wrapper) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// 
+// rust-lld: error: undefined symbol: strncasecmp
+// >>> referenced by libc_builtin_wrapper.c:776 (D:/packages/cargo/git/checkouts/wamr-rust-sdk-1a60293b7f8ce5e8/c08ad83/crates/wamr-sys/wasm-micro-runtime/core/iwasm/libraries/libc-builtin\libc_builtin_wrapper.c:776)
+// >>>               libc_builtin_wrapper.c.obj:(strncasecmp_wrapper) in archive D:\Rust\hydrozoa\target\armv7a-vex-v5\debug\deps\libwamr_sys-2b3c9481067b1d05.rlib
+// 
+
 // these really get more unhinged the more you read
 
 #[no_mangle]
@@ -20,7 +143,7 @@ unsafe extern "C" fn abort() {
 #[allow(non_upper_case_globals)]
 const max_align_t: usize = 16;
 
-static LAYOUTS: LazyLock<Mutex<HashMap<usize, Layout>>> = LazyLock::new(Mutex::default);
+static LAYOUTS: Mutex<Option<HashMap<usize, Layout>>> = Mutex::new(None);
 
 #[no_mangle]
 extern "C" fn calloc(nmemb: usize, size: usize) -> *mut u8 {
@@ -35,7 +158,7 @@ extern "C" fn calloc(nmemb: usize, size: usize) -> *mut u8 {
     }
 
     let mut layouts = LAYOUTS.try_lock().unwrap();
-    layouts.insert(ptr as usize, layout);
+    layouts.get_or_insert_default().insert(ptr as usize, layout);
 
     ptr
 }
@@ -47,6 +170,7 @@ extern "C" fn free(ptr: *mut u8) {
     }
     let mut layouts = LAYOUTS.try_lock().unwrap();
     let layout = layouts
+        .get_or_insert_default()
         .remove(&(ptr as usize))
         .expect("double free detected");
     unsafe { alloc::alloc::dealloc(ptr, layout) };
@@ -60,6 +184,7 @@ extern "C" fn realloc(ptr: *mut u8, size: usize) -> *mut u8 {
 
     let mut layouts = LAYOUTS.try_lock().unwrap();
     let layout = layouts
+        .get_or_insert_default()
         .remove(&(ptr as usize))
         .expect("realloc on unknown pointer");
     let new_layout = Layout::from_size_align(size, layout.align()).unwrap();
@@ -68,7 +193,7 @@ extern "C" fn realloc(ptr: *mut u8, size: usize) -> *mut u8 {
         return new_ptr;
     }
 
-    layouts.insert(new_ptr as usize, new_layout);
+    layouts.get_or_insert_default().insert(new_ptr as usize, new_layout);
 
     new_ptr
 }
