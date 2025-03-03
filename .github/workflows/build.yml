@@ -15,11 +15,13 @@ jobs:
             - name: Setup | Toolchain
               uses: dtolnay/rust-toolchain@master
               with:
-                  toolchain: nightly-2024-08-20
+                  toolchain: nightly-2025-02-18
                   components: rust-src
 
-            - name: Setup | GCC
-              uses: carlosperate/arm-none-eabi-gcc-action@v1
+            - name: Setup Ninja
+              uses: ashutoshvarma/setup-ninja@v1.1
+              with:
+                version: '1.12.1'
 
             - name: Check
               run: cargo check
