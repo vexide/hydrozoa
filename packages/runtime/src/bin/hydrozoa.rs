@@ -33,7 +33,7 @@ fn run(runtime: &Runtime) -> anyhow::Result<()> {
 
     // TODO: This clone effectively doubles the program space in memory.
     // See if there's a way to reduce this usage.
-    let module = Module::from_vec(&runtime, Vec::from(wasm_bytes), "hydrozoa_module.wasm")
+    let module = Module::from_mut_slice(runtime, wasm_bytes, "hydrozoa_module.wasm")
         .context("Unable to load module")?;
 
     let mut instance = Instance::new(&runtime, &module, STACK_SIZE).context("Unable to instantiate module")?;

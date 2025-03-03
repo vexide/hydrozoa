@@ -32,3 +32,11 @@ cargo v5 build --release
 ```
 
 The resulting `hydrozoa.bin` file is located in `./target/armv7a-vex-v5/release/`.
+
+### Troubleshooting
+
+- If you're on Linux or Mac and you're seeing errors about Ninja,
+  set the environment variable:
+  ```shell
+  export CMAKE_GENERATOR="Unix Makefiles"
+  ```

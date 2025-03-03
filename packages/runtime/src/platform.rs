@@ -8,15 +8,21 @@ use vexide::{
     },
     prelude::*,
 };
+use vexide::sync::Once;
 
-const LINKED_FILE: *const u32 = 0x7800000 as *const u32;
+const LINKED_FILE: *mut u32 = 0x7800000 as *mut u32;
+static LINKED_FILE_ONCE: Once = Once::new();
 
-pub fn read_user_program() -> &'static [u8] {
-    unsafe {
-        let len = ptr::read_volatile(LINKED_FILE);
-        let file_base: *const u8 = LINKED_FILE.offset(1).cast();
-        core::slice::from_raw_parts(file_base, len as usize)
-    }
+pub fn read_user_program() -> &'static mut [u8] {
+    let mut program = None;
+    LINKED_FILE_ONCE.try_call_once(|| {
+        program = unsafe {
+            let len = ptr::read_volatile(LINKED_FILE);
+            let file_base: *mut u8 = LINKED_FILE.offset(1).cast();
+            Some(core::slice::from_raw_parts_mut(file_base, len as usize))
+        }
+    }).unwrap();
+    program.expect("cannot claim user program twice")
 }
 
 pub fn flush_serial() {

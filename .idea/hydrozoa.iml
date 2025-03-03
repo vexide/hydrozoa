@@ -8,6 +8,8 @@
       <sourceFolder url="file://$MODULE_DIR$/packages/wasm3/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages/wasm3/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages/wasm3/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/example/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/sysroot" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
