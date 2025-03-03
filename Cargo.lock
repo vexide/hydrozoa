@@ -472,7 +472,7 @@ dependencies = [
 [[package]]
 name = "wamr-rust-sdk"
 version = "1.0.0"
-source = "git+https://github.com/doinkythederp/wamr-rust-sdk.git?branch=feat%2Fvexos-target#274982161a98e98e6bf312147bb0af7c8add1299"
+source = "git+https://github.com/doinkythederp/wamr-rust-sdk.git?branch=feat%2Fvexos-target#bde69998604bc71c2a617a07565daa181f40a0ce"
 dependencies = [
  "wamr-sys",
 ]
@@ -480,7 +480,7 @@ dependencies = [
 [[package]]
 name = "wamr-sys"
 version = "1.0.0"
-source = "git+https://github.com/doinkythederp/wamr-rust-sdk.git?branch=feat%2Fvexos-target#274982161a98e98e6bf312147bb0af7c8add1299"
+source = "git+https://github.com/doinkythederp/wamr-rust-sdk.git?branch=feat%2Fvexos-target#bde69998604bc71c2a617a07565daa181f40a0ce"
 dependencies = [
  "bindgen",
  "cc",

@@ -10,7 +10,7 @@ static ALLOCATOR: LibcAlloc = LibcAlloc;
 
 mod libc_support;
 pub mod platform;
-// pub mod sdk;
+pub mod sdk;
 // pub mod teavm;
 
 #[derive(Default)]

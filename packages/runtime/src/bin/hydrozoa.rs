@@ -10,7 +10,7 @@ use wamr_rust_sdk::instance::Instance;
 use wamr_rust_sdk::module::Module;
 use wamr_rust_sdk::runtime::Runtime;
 use wamr_rust_sdk::value::WasmValue;
-use runtime::platform;
+use runtime::{platform, sdk};
 use vexide_wasm_startup::{startup, CodeSignature, ProgramFlags, ProgramOwner, ProgramType};
 
 extern crate alloc;
@@ -18,9 +18,7 @@ extern crate alloc;
 const STACK_SIZE: u32 = 1024 * 64;
 
 fn main(_peripherals: Peripherals) {
-    let runtime = Runtime::new().expect("Unable to create runtime");
-
-    if let Err(mut err) = run(&runtime) {
+    if let Err(mut err) = run() {
         // if let Some(info) = store.take_error_info() {
         //     err = err.context(info);
         // }
@@ -28,12 +26,14 @@ fn main(_peripherals: Peripherals) {
     }
 }
 
-fn run(runtime: &Runtime) -> anyhow::Result<()> {
+fn run() -> anyhow::Result<()> {
     let wasm_bytes = platform::read_user_program();
+    
+    let mut runtime = Runtime::builder();
+    runtime = sdk::link(runtime);
+    let runtime = runtime.build()?;
 
-    // TODO: This clone effectively doubles the program space in memory.
-    // See if there's a way to reduce this usage.
-    let module = Module::from_mut_slice(runtime, wasm_bytes, "hydrozoa_module.wasm")
+    let module = Module::from_mut_slice(&runtime, wasm_bytes, "hydrozoa_module.wasm")
         .context("Unable to load module")?;
 
     let mut instance = Instance::new(&runtime, &module, STACK_SIZE).context("Unable to instantiate module")?;
@@ -46,7 +46,7 @@ fn run(runtime: &Runtime) -> anyhow::Result<()> {
     let function = Function::find_export_func(&instance, "add")?;
 
     let params: Vec<WasmValue> = vec![WasmValue::I32(3), WasmValue::I32(6)];
-    let result = function.call(&instance, &params)?;
+    let result = function.call(&mut instance, &params)?;
     println!("add(3, 6) = {result:?}");
     // assert_eq!(result[0], WasmValue::I32(9));
 
@@ -65,5 +65,10 @@ static CODE_SIGNATURE: CodeSignature = CodeSignature::new(
 unsafe extern "C" fn _start() -> ! {
     startup();
     main(Peripherals::take().unwrap());
-    exit();
+    // exit();
+    loop {
+        unsafe {
+            vex_sdk::vexTasksRun();
+        }
+    }
 }
