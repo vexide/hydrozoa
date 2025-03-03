@@ -139,11 +139,5 @@ pub unsafe fn startup() {
             core::ptr::addr_of_mut!(__bss_start),
             core::ptr::addr_of_mut!(__bss_end),
         );
-
-        // Initialize the heap allocator
-        vexide::core::allocator::claim(
-            core::ptr::addr_of_mut!(__heap_start),
-            core::ptr::addr_of_mut!(__heap_end),
-        );
     }
 }

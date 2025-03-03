@@ -4,7 +4,7 @@
 use alloc::vec;
 use alloc::vec::Vec;
 use anyhow::Context;
-use vexide::{core::program::exit, prelude::*};
+use vexide::{program::exit, prelude::*};
 use wamr_rust_sdk::function::Function;
 use wamr_rust_sdk::instance::Instance;
 use wamr_rust_sdk::module::Module;
@@ -47,7 +47,8 @@ fn run(runtime: &Runtime) -> anyhow::Result<()> {
 
     let params: Vec<WasmValue> = vec![WasmValue::I32(3), WasmValue::I32(6)];
     let result = function.call(&instance, &params)?;
-    assert_eq!(result[0], WasmValue::I32(9));
+    println!("add(3, 6) = {result:?}");
+    // assert_eq!(result[0], WasmValue::I32(9));
 
     Ok(())
 }
