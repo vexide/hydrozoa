@@ -16,12 +16,8 @@ jobs:
               uses: dtolnay/rust-toolchain@master
               with:
                   toolchain: nightly-2025-02-18
-                  components: rust-src
-
-            - name: Setup Ninja
-              uses: ashutoshvarma/setup-ninja@v1.1
-              with:
-                version: '1.12.1'
-
+                  components: rust-src=
+            - name: Configure CMake for Makefiles
+              run: echo "CMAKE_GENERATOR=Unix Makefiles" >> $GITHUB_ENV
             - name: Check
               run: cargo check
