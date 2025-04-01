@@ -1,15 +1,17 @@
 use alloc::string::String;
 use core::{
     alloc::Layout,
-    ffi::{c_int, VaList},
+    ffi::{c_char, c_int, VaList},
 };
 use core::ffi::c_void;
 use core::ptr::addr_of_mut;
 use hashbrown::HashMap;
 use vexide::{
-    io::print,
+    io::{print, Write},
     sync::{LazyLock, Mutex},
 };
+
+pub mod wamr;
 
 #[link(name = "c")]
 extern "C" {}
@@ -51,4 +53,22 @@ unsafe extern "C" fn _sbrk(incr: i32) -> *mut c_void {
             (-1_isize) as *mut c_void
         }
     }
+}
+
+#[no_mangle]
+unsafe extern "C" fn _write(file: c_int, ptr: *const c_char, len: c_int) -> c_int {
+    let slice: &[u8] = unsafe {
+        core::slice::from_raw_parts(ptr.cast(), len as usize)
+    };
+
+    if file == 1 || file == 2 {
+        let mut out = vexide::io::stdout().try_lock().unwrap();
+        return out.write(slice).unwrap() as c_int;
+    }
+
+    const ENOSYS: c_int = 88;
+    unsafe {
+        *__errno() = ENOSYS;
+    }
+    -1
 }

@@ -8,7 +8,7 @@ use libc_alloc::LibcAlloc;
 #[global_allocator]
 static ALLOCATOR: LibcAlloc = LibcAlloc;
 
-mod libc_support;
+pub mod sys_support;
 pub mod platform;
 pub mod sdk;
 // pub mod teavm;

@@ -345,6 +345,7 @@ dependencies = [
  "vexide",
  "vexide_wasm_startup",
  "wamr-rust-sdk",
+ "wamr-sys",
 ]
 
 [[package]]

@@ -10,7 +10,7 @@ use wamr_rust_sdk::instance::Instance;
 use wamr_rust_sdk::module::Module;
 use wamr_rust_sdk::runtime::Runtime;
 use wamr_rust_sdk::value::WasmValue;
-use runtime::{platform, sdk};
+use runtime::{platform, sdk, sys_support::wamr::{set_log_level, WamrLogLevel}};
 use vexide_wasm_startup::{startup, CodeSignature, ProgramFlags, ProgramOwner, ProgramType};
 
 extern crate alloc;
@@ -24,9 +24,14 @@ fn main(_peripherals: Peripherals) {
 fn run() {
     let wasm_bytes = platform::read_user_program();
     
-    let mut runtime = Runtime::builder();
+    set_log_level(WamrLogLevel::VERBOSE);
+    
+    let mut runtime = Runtime::builder()
+        .use_system_allocator();
     runtime = sdk::link(runtime);
     let runtime = runtime.build().unwrap();
+
+    set_log_level(WamrLogLevel::VERBOSE);
 
     let module = Module::from_mut_slice(&runtime, wasm_bytes, "hydrozoa_module.wasm")
         .expect("Unable to load module");
