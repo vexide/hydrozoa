@@ -7,7 +7,7 @@ use vex_sdk::{
     V5MotorBrakeMode, V5MotorControlMode, V5MotorEncoderUnits, V5MotorGearset, V5_ControllerId,
     V5_ControllerIndex, V5_DeviceType,
 };
-use vexide::{core::println, prelude::Display};
+use vexide::{io::println, prelude::Display};
 use wasm3::{error::Trap, store::AsContextMut, Instance, Store};
 
 use crate::{platform::draw_error, teavm::get_cstring, Data};

@@ -5,8 +5,8 @@ use core::{
 };
 
 use hashbrown::HashMap;
-use vexide::core::{
-    print,
+use vexide::{
+    io::print,
     sync::{LazyLock, Mutex},
 };
 
