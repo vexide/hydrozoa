@@ -3,6 +3,7 @@ members = ["packages/*"]
 default-members = [
     "packages/runtime",
     "packages/startup",
+    "packages/macros",
     "packages/wasm3",
     "packages/wasm3-sys",
 ]

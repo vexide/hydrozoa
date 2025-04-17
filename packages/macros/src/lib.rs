@@ -1,7 +1,7 @@
 use core::convert::Into;
 
 use proc_macro::TokenStream;
-use quote::{quote, TokenStreamExt};
+use quote::{quote, quote_spanned, TokenStreamExt};
 use syn::{
     DeriveInput, Expr, FnArg, Ident, ReturnType, Token, Type, Variadic, braced, parenthesized,
     parse::{Parse, ParseStream},
@@ -22,23 +22,33 @@ pub fn link(input: TokenStream) -> TokenStream {
     let mut item_tokens = vec![];
     for item in module_items {
         let name = item.ident;
+
+        let mut args = vec![];
+        let mut types = vec![];
+
+        for input in item.inputs {
+            if let FnArg::Typed(arg) = input {
+                args.push(arg.pat);
+                types.push(arg.ty);
+            } else {
+                panic!("`self` arguments aren't supported");
+            }
+        }
+
         item_tokens.push(quote! {
             #instance_param.link_closure(
                 &mut * #store_param,
                 #module_name,
                 stringify!(#name),
-                // #[allow(unused_parens)]
-                // |mut ctx, ($($arg,)* string): ($($arg_ty,)* i32)| {
-                //     let string = get_cstring(&mut ctx, string);
-                //     unsafe {
-                //         vex_sdk::$name(
-                //             $($arg,)*
-                //             c"%s".as_ptr(),
-                //             string.as_ptr(),
-                //         );
-                //     }
-                //     Ok(())
-                // }
+                #[allow(unused_parens)]
+                |mut ctx, (#(#args),*): (#(#types),*)| {
+                    unsafe {
+                        vex_sdk::#name(
+                            #(#args,)*
+                        );
+                    }
+                    Ok(())
+                }
             )?;
         });
     }
@@ -122,14 +132,14 @@ impl Parse for LinkItem {
                 break;
             }
 
-            let arg = input.parse()?;
+            let arg = content.parse()?;
             inputs.push_value(arg);
 
-            if input.is_empty() {
+            if content.is_empty() {
                 break;
             }
 
-            let comma: Token![,] = input.parse()?;
+            let comma: Token![,] = content.parse()?;
             inputs.push_punct(comma);
         }
 
