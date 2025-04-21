@@ -1,15 +1,55 @@
 use core::convert::Into;
 
 use proc_macro::TokenStream;
-use quote::{quote, quote_spanned, TokenStreamExt};
+use quote::{quote, quote_spanned, ToTokens};
 use syn::{
-    DeriveInput, Expr, FnArg, Ident, ReturnType, Token, Type, Variadic, braced, parenthesized,
-    parse::{Parse, ParseStream},
-    parse_macro_input,
-    punctuated::Punctuated,
-    token::Paren,
+    braced, parenthesized, parse::{Parse, ParseStream}, parse_macro_input, punctuated::Punctuated, spanned::Spanned, token::Paren, DeriveInput, Expr, FnArg, Ident, ReturnType, Token, Type, Variadic
 };
 
+/// Register a set of VEX SDK functions such that they can be accessed from the given
+/// WASM `instance` using the given `store` by importing them from the specified
+/// module name.
+/// 
+/// For example, the following code will create a function in the WASM module `module_name`
+/// named `my_func` which calls `vex_sdk::my_func` and returns a WASM I32.
+/// 
+/// ```
+/// link!(instance, store, mod "module_name" {
+///     fn my_func() -> i32;
+/// });
+/// ```
+/// 
+/// You can optionally specify wrapper expressions on arguments to aid in conversion from the raw
+/// WASM type (limited to i32, i64, f32, f64, v128, funcref, externref) to something `vex_sdk`
+/// expects.
+/// 
+/// ```
+/// link!(instance, store, mod "module_name" {
+///     // Wraps `vex_sdk::my_func_raw(a: i32)`
+///     fn my_func_raw(a: i32);
+/// 
+///     // Wraps `vex_sdk::my_func(a: ControllerId)`
+///     fn my_func(a: i32 as |x| ControllerId(x));
+/// 
+///     // Equivalent to above
+///     fn my_func(a: i32 as ControllerId);
+/// });
+/// ```
+/// 
+/// The opposite can be done with return types to aid in conversion back to a raw WASM type.
+/// 
+/// ```
+/// link!(instance, store, mod "module_name" {
+///     // Wraps `vex_sdk::my_func_raw() -> i32`
+///     fn my_func_raw() -> i32;
+/// 
+///     // Wraps `vex_sdk::my_func() -> ControllerId`
+///     fn my_func() -> i32 as |id| id.0;
+/// });
+/// ```
+/// 
+/// You can also specify a function as `printf fn` to automatically add an extra C-string parameter to the WASM function
+/// which is passed to the underlying `vex_sdk` call using the `"%s"` format specifier.
 #[proc_macro]
 pub fn link(input: TokenStream) -> TokenStream {
     let LinkCall {
@@ -25,29 +65,77 @@ pub fn link(input: TokenStream) -> TokenStream {
 
         let mut args = vec![];
         let mut types = vec![];
+        let mut arg_wrappers = vec![];
 
         for input in item.inputs {
-            if let FnArg::Typed(arg) = input {
-                args.push(arg.pat);
-                types.push(arg.ty);
+
+            let arg;
+            if let FnArg::Typed(inner) = input.fn_arg {
+                arg = inner;
             } else {
                 panic!("`self` arguments aren't supported");
             }
+
+            let raw_type;
+            let wrapper_type;
+            if let WrapperType::Convert(_, inner) = input.raw_type {
+                raw_type = arg.ty;
+                wrapper_type = Some(inner);
+            } else {
+                raw_type = arg.ty;
+                wrapper_type = None;
+            }
+
+            types.push(raw_type);
+            args.push(arg.pat);
+            arg_wrappers.push(wrapper_type);
         }
 
-        item_tokens.push(quote! {
+        let is_printf = item.printfness.is_some();
+        let mut printf_args = quote! {};
+        let mut format_param = quote! {};
+        let mut printf_convert = quote! {};
+        if is_printf {
+            printf_args = quote! { string, };
+            format_param = quote! { c"%s".as_ptr(), string.as_ptr(), };
+            printf_convert = quote! { let string = get_cstring(&mut ctx, string); };
+
+            let string_type = syn::parse2(quote! { i32 }).unwrap();
+            types.push(Box::new(string_type));
+        }
+
+        let mut return_wrapper = quote! {};
+        let mut return_type = quote! { () };
+        if let LinkItemReturnType::Type { 
+            return_type: inner, 
+            wrapper,
+            ..
+        } = item.output {
+            if let WrapperType::Convert(_, wrapper) = wrapper {
+                let span = wrapper.span();
+                return_wrapper = quote_spanned! {span=> (#wrapper)};
+            }
+            return_type = inner.to_token_stream();
+        }
+
+        let span = name.span();
+
+        item_tokens.push(quote_spanned! {span=>
             #instance_param.link_closure(
                 &mut * #store_param,
                 #module_name,
                 stringify!(#name),
-                #[allow(unused_parens)]
-                |mut ctx, (#(#args),*): (#(#types),*)| {
-                    unsafe {
-                        vex_sdk::#name(
-                            #(#args,)*
-                        );
-                    }
-                    Ok(())
+                #[allow(unused_parens, unused, clippy::double_parens, clippy::redundant_closure_call)]
+                |mut ctx, (#(#args,)* #printf_args): (#(#types,)*)| {
+                    #printf_convert
+                    let res: #return_type = unsafe {
+                        #return_wrapper (vex_sdk::#name(
+                            #(#arg_wrappers (#args as _),)*
+                            #format_param
+                        )) as _
+                    };
+
+                    Ok(res)
                 }
             )?;
         });
@@ -105,9 +193,9 @@ struct LinkItem {
     fn_token: Token![fn],
     ident: Ident,
     paren_token: Paren,
-    inputs: Punctuated<FnArg, Token![,]>,
+    inputs: Punctuated<LinkItemArg, Token![,]>,
     variadic: Option<Token![...]>,
-    output: ReturnType,
+    output: LinkItemReturnType,
 }
 
 impl Parse for LinkItem {
@@ -159,7 +247,7 @@ impl Parse for LinkItem {
 
 struct LinkItemArg {
     fn_arg: FnArg,
-    raw_type: RawType,
+    raw_type: WrapperType,
 }
 
 impl Parse for LinkItemArg {
@@ -175,7 +263,7 @@ enum LinkItemReturnType {
     Type {
         arrow: Token![->],
         return_type: Box<Type>,
-        raw_type: RawType,
+        wrapper: WrapperType,
     },
 }
 
@@ -189,7 +277,7 @@ impl Parse for LinkItemReturnType {
             Ok(Self::Type {
                 arrow,
                 return_type,
-                raw_type,
+                wrapper: raw_type,
             })
         } else {
             Ok(Self::Default)
@@ -197,18 +285,18 @@ impl Parse for LinkItemReturnType {
     }
 }
 
-enum RawType {
+enum WrapperType {
     None,
-    Type(Token![as], Box<Type>),
+    Convert(Token![as], Box<Expr>),
 }
 
-impl Parse for RawType {
+impl Parse for WrapperType {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         if input.peek(Token![as]) {
             let as_token = input.parse::<Token![as]>()?;
             let raw_type = input.parse()?;
 
-            Ok(Self::Type(as_token, Box::new(raw_type)))
+            Ok(Self::Convert(as_token, Box::new(raw_type)))
         } else {
             Ok(Self::None)
         }
