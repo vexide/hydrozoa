@@ -12,62 +12,6 @@ use hydrozoa_macros::link;
 
 use crate::{platform::draw_error, teavm::get_cstring, Data};
 
-// macro_rules! link {
-//     ($instance:ident, $store:ident, mod $module:literal {
-//         $( fn $name:ident ( $($arg:ident: $arg_ty:ty $(as $wrapper:expr)? $(,)?),* )  $(-> $ret:ty $(, in .$field:tt)?)?; )*
-//     }) => {
-//         {
-//             $(
-//                 $instance.link_closure(
-//                     &mut *$store,
-//                     $module,
-//                     stringify!($name),
-//                     #[allow(unused_parens)]
-//                     |_ctx, ($($arg),*): ($($arg_ty),*)| {
-//                         #[inline]
-//                         fn inner($($arg: $arg_ty),*) $(-> $ret)? {
-//                             unsafe {
-//                                 vex_sdk::$name(
-//                                     $($($wrapper)? ($arg as _)),*
-//                                 ) $($(.$field)? as $ret)?
-//                             }
-//                         }
-//                         Ok(inner($($arg),*))
-//                     }
-//                 )?;
-//             )*
-//         }
-//     };
-// }
-
-// macro_rules! printf_style {
-//     ($instance:ident, $store:ident, mod $module:literal {
-//         $( fn $name:ident ( $($arg:ident: $arg_ty:ty,)* @printf@); )*
-//     }) => {
-//         {
-//             $(
-//                 $instance.link_closure(
-//                     &mut *$store,
-//                     $module,
-//                     stringify!($name),
-//                     #[allow(unused_parens)]
-//                     |mut ctx, ($($arg,)* string): ($($arg_ty,)* i32)| {
-//                         let string = get_cstring(&mut ctx, string);
-//                         unsafe {
-//                             vex_sdk::$name(
-//                                 $($arg,)*
-//                                 c"%s".as_ptr(),
-//                                 string.as_ptr(),
-//                             );
-//                         }
-//                         Ok(())
-//                     }
-//                 )?;
-//             )*
-//         }
-//     };
-// }
-
 pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::Result<()> {
     instance.link_closure(
         &mut *store,
@@ -212,11 +156,7 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
             let devices = &mut memory
                 [array_ptr as usize..(array_ptr as usize + vex_sdk::V5_MAX_DEVICE_PORTS)];
 
-            let devices = unsafe {
-                // SAFETY: V5_DeviceType is a repr(transparent) struct holding a u8
-                core::mem::transmute::<*mut u8, *mut V5_DeviceType>(devices.as_mut_ptr())
-            };
-            Ok(unsafe { vex_sdk::vexDeviceGetStatus(devices) })
+            Ok(unsafe { vex_sdk::vexDeviceGetStatus(devices.as_mut_ptr().cast()) })
         },
     )?;
 

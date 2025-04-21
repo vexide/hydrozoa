@@ -6,6 +6,8 @@ use syn::{
     braced, parenthesized, parse::{Parse, ParseStream}, parse_macro_input, punctuated::Punctuated, spanned::Spanned, token::Paren, DeriveInput, Expr, FnArg, Ident, ReturnType, Token, Type, Variadic
 };
 
+mod serialize;
+
 /// Register a set of VEX SDK functions such that they can be accessed from the given
 /// WASM `instance` using the given `store` by importing them from the specified
 /// module name.
