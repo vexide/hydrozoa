@@ -1,7 +1,10 @@
 use core::convert::Into;
+use std::path::PathBuf;
 
 use proc_macro::TokenStream;
+use proc_macro_error::{abort, proc_macro_error};
 use quote::{quote, quote_spanned, ToTokens};
+use serialize::SdkModule;
 use syn::{
     braced, parenthesized, parse::{Parse, ParseStream}, parse_macro_input, punctuated::Punctuated, spanned::Spanned, token::Paren, DeriveInput, Expr, FnArg, Ident, ReturnType, Token, Type, Variadic
 };
@@ -52,14 +55,31 @@ mod serialize;
 /// 
 /// You can also specify a function as `printf fn` to automatically add an extra C-string parameter to the WASM function
 /// which is passed to the underlying `vex_sdk` call using the `"%s"` format specifier.
+#[proc_macro_error]
 #[proc_macro]
 pub fn link(input: TokenStream) -> TokenStream {
+    let link_call = parse_macro_input!(input as LinkCall);
+
+    let serialized = SdkModule::new(&link_call);
+    if serialized.is_none() {
+        return TokenStream::new();
+    }
+
+    let json = serde_json::to_vec_pretty(&serialized).unwrap();
+    
+    let out_file = PathBuf::from(env!("OUT_DIR"))
+        .ancestors()
+        .nth(3)
+        .unwrap()
+        .join("hydrozoa_api.json");
+    std::fs::write(out_file, &json).unwrap();
+
     let LinkCall {
         instance_param,
         store_param,
         module_name,
         module_items,
-    } = parse_macro_input!(input as LinkCall);
+    } = link_call;
 
     let mut item_tokens = vec![];
     for item in module_items {
@@ -75,12 +95,12 @@ pub fn link(input: TokenStream) -> TokenStream {
             if let FnArg::Typed(inner) = input.fn_arg {
                 arg = inner;
             } else {
-                panic!("`self` arguments aren't supported");
+                abort!(input.fn_arg, "`self` arguments aren't supported");
             }
 
             let raw_type;
             let wrapper_type;
-            if let WrapperType::Convert(_, inner) = input.raw_type {
+            if let WrapperType::Convert(_, inner) = input.wrapper {
                 raw_type = arg.ty;
                 wrapper_type = Some(inner);
             } else {
@@ -249,14 +269,14 @@ impl Parse for LinkItem {
 
 struct LinkItemArg {
     fn_arg: FnArg,
-    raw_type: WrapperType,
+    wrapper: WrapperType,
 }
 
 impl Parse for LinkItemArg {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let fn_arg = input.parse()?;
-        let raw_type = input.parse()?;
-        Ok(Self { fn_arg, raw_type })
+        let wrapper = input.parse()?;
+        Ok(Self { fn_arg, wrapper })
     }
 }
 
@@ -274,12 +294,12 @@ impl Parse for LinkItemReturnType {
         if input.peek(Token![->]) {
             let arrow = input.parse()?;
             let return_type = Box::new(input.parse()?);
-            let raw_type = input.parse()?;
+            let wrapper = input.parse()?;
 
             Ok(Self::Type {
                 arrow,
                 return_type,
-                wrapper: raw_type,
+                wrapper,
             })
         } else {
             Ok(Self::Default)
@@ -296,9 +316,9 @@ impl Parse for WrapperType {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         if input.peek(Token![as]) {
             let as_token = input.parse::<Token![as]>()?;
-            let raw_type = input.parse()?;
+            let wrapper = input.parse()?;
 
-            Ok(Self::Convert(as_token, Box::new(raw_type)))
+            Ok(Self::Convert(as_token, Box::new(wrapper)))
         } else {
             Ok(Self::None)
         }
