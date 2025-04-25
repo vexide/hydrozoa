@@ -36,13 +36,19 @@ pub struct SdkItem {
 
 impl SdkItem {
     pub fn new(item: &LinkItem) -> Option<Self> {
+        let mut params = item.inputs.iter()
+            .map(SdkItemParam::new)
+            .collect::<Vec<_>>()
+            .into_iter()
+            .collect::<Option<Vec<_>>>()?;
+
+        if item.printfness.is_some() {
+            params.push(SdkItemParam { name: "string".to_string(), r#type: SdkType::StringPtr });
+        }
+
         Some(Self {
             name: item.ident.to_string().replace("r#", ""),
-            params: item.inputs.iter()
-                .map(SdkItemParam::new)
-                .collect::<Vec<_>>()
-                .into_iter()
-                .collect::<Option<Vec<_>>>()?,
+            params,
             returns: SdkType::from_return_type(&item.output)?,
         })
     }
@@ -88,6 +94,7 @@ enum SdkType {
     Long,
     Float,
     Double,
+    StringPtr,
     Named(String)
 }
 
@@ -101,6 +108,7 @@ impl SdkType {
             "i64" | "u64" => Self::Long,
             "f32" | "c_float" => Self::Float,
             "f64" | "c_double" => Self::Double,
+            "CStr" => Self::StringPtr,
             _ => {
                 emit_error!(ty, "This type is not supported");
                 return None;
