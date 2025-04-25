@@ -100,7 +100,7 @@ pub fn link(input: TokenStream) -> TokenStream {
 
             let raw_type;
             let wrapper_type;
-            if let WrapperType::Convert(_, inner) = input.wrapper {
+            if let WrapperType::Convert(inner) = input.wrapper {
                 raw_type = arg.ty;
                 wrapper_type = Some(inner);
             } else {
@@ -133,9 +133,9 @@ pub fn link(input: TokenStream) -> TokenStream {
             wrapper,
             ..
         } = item.output {
-            if let WrapperType::Convert(_, wrapper) = wrapper {
+            if let WrapperType::Convert(wrapper) = wrapper {
                 let span = wrapper.span();
-                return_wrapper = quote_spanned! {span=> (#wrapper)};
+                return_wrapper = quote_spanned! {span=> (|x: #wrapper| x.0)};
             }
             return_type = inner.to_token_stream();
         }
@@ -309,16 +309,16 @@ impl Parse for LinkItemReturnType {
 
 enum WrapperType {
     None,
-    Convert(Token![as], Box<Expr>),
+    Convert(Box<Type>),
 }
 
 impl Parse for WrapperType {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         if input.peek(Token![as]) {
-            let as_token = input.parse::<Token![as]>()?;
+            input.parse::<Token![as]>()?;
             let wrapper = input.parse()?;
 
-            Ok(Self::Convert(as_token, Box::new(wrapper)))
+            Ok(Self::Convert(Box::new(wrapper)))
         } else {
             Ok(Self::None)
         }

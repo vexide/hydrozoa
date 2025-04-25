@@ -4,7 +4,7 @@ use proc_macro_error::{abort, diagnostic, emit_error, Level};
 use serde::Serialize;
 use syn::{spanned::Spanned, FnArg, Pat, PatType, Type};
 
-use crate::{LinkCall, LinkItem, LinkItemArg, LinkItemReturnType};
+use crate::{LinkCall, LinkItem, LinkItemArg, LinkItemReturnType, WrapperType};
 
 #[derive(Serialize)]
 pub struct SdkModule {
@@ -72,7 +72,11 @@ impl SdkItemParam {
 
         Some(Self {
             name: name.ident.to_string().replace("r#", ""),
-            r#type: SdkType::new(&fn_arg.ty)?,
+            r#type: if let WrapperType::Convert(wrapper) = &arg.wrapper {
+                SdkType::Named(get_type_name(wrapper)?)
+            } else {
+                SdkType::from_type(&fn_arg.ty)?
+            },
         })
     }
 }
@@ -84,38 +88,37 @@ enum SdkType {
     Long,
     Float,
     Double,
-    Enum(String)
+    Named(String)
 }
 
 impl SdkType {
-    pub fn new(ty: &Type) -> Option<Self> {
-        let path = if let Type::Path(path) = ty {
-            path
-        } else {
-            emit_error!(ty, "This type is not allowed because it can't be represented in the API description format");
-            return None;
-        };
+    pub fn from_type(ty: &Type) -> Option<Self> {
+        let type_name = get_type_name(ty)?;
 
-        let last_segment = path.path.segments.last().unwrap().ident.to_string();
-
-        Some(match &*last_segment {
+        Some(match &*type_name {
             "bool" => Self::Bool,
             "i32" | "u32" => Self::Int,
             "i64" | "u64" => Self::Long,
             "f32" | "c_float" => Self::Float,
             "f64" | "c_double" => Self::Double,
             _ => {
-                emit_error!(path, "This type is not supported");
+                emit_error!(ty, "This type is not supported");
                 return None;
             }
         })
     }
 
     pub fn from_return_type(output: &LinkItemReturnType) -> Option<Option<Self>> {
-        match output {
-            LinkItemReturnType::Default => Some(None),
-            LinkItemReturnType::Type { return_type, .. } => Some(Self::new(return_type)),
-        }
+        Some(match output {
+            LinkItemReturnType::Default => None,
+            LinkItemReturnType::Type { return_type, wrapper, .. } => {
+                if let WrapperType::Convert(wrapper) = wrapper {
+                    Some(Self::Named(get_type_name(wrapper)?))
+                } else {
+                    Self::from_type(return_type)
+                }
+            }
+        })
     }
 }
 
@@ -124,4 +127,21 @@ pub struct SdkEnum {
     name: String,
     underlying_type: SdkType,
     variants: HashMap<String, f64>,
+}
+
+fn get_type_name(ty: &Type) -> Option<String> {
+    let path = if let Type::Path(path) = ty {
+        path
+    } else {
+        emit_error!(ty, "This type is not allowed because it can't be represented in the API description format");
+        return None;
+    };
+
+    let name = path.path.segments
+        .iter()
+        .map(|seg| seg.ident.to_string())
+        .collect::<Vec<_>>()
+        .join("::");
+
+    Some(name)
 }

@@ -72,8 +72,7 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
 
         // Controller
         fn vexControllerGet(id: u32 as V5_ControllerId, index: u32 as V5_ControllerIndex) -> i32;
-        fn vexControllerConnectionStatusGet(id: u32 as V5_ControllerId) -> u32
-            as |x: V5_ControllerStatus| x.0;
+        fn vexControllerConnectionStatusGet(id: u32 as V5_ControllerId) -> u32 as V5_ControllerStatus;
 
         // Device
         fn vexDeviceGetByIndex(index: u32) -> u32;
@@ -84,7 +83,7 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
         fn vexDeviceMotorActualVelocityGet(device: u32) -> c_double;
         fn vexDeviceMotorDirectionGet(device: u32) -> i32;
         fn vexDeviceMotorModeSet(device: u32, mode: u32 as V5MotorControlMode);
-        fn vexDeviceMotorModeGet(device: u32) -> u32 as |x: V5MotorControlMode| x.0;
+        fn vexDeviceMotorModeGet(device: u32) -> u32 as V5MotorControlMode;
         fn vexDeviceMotorPwmSet(device: u32, pwm: i32);
         fn vexDeviceMotorPwmGet(device: u32) -> i32;
         fn vexDeviceMotorCurrentLimitSet(device: u32, limit: i32);
@@ -101,9 +100,9 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
         fn vexDeviceMotorReverseFlagSet(device: u32, reverse: bool);
         fn vexDeviceMotorReverseFlagGet(device: u32) -> bool;
         fn vexDeviceMotorEncoderUnitsSet(device: u32, units: u32 as V5MotorEncoderUnits);
-        fn vexDeviceMotorEncoderUnitsGet(device: u32) -> u32 as |x: V5MotorEncoderUnits| x.0;
+        fn vexDeviceMotorEncoderUnitsGet(device: u32) -> u32 as V5MotorEncoderUnits;
         fn vexDeviceMotorBrakeModeSet(device: u32, mode: u32 as V5MotorBrakeMode);
-        fn vexDeviceMotorBrakeModeGet(device: u32) -> u32 as |x: V5MotorBrakeMode| x.0;
+        fn vexDeviceMotorBrakeModeGet(device: u32) -> u32 as V5MotorBrakeMode;
         fn vexDeviceMotorPositionSet(device: u32, position: c_double);
         fn vexDeviceMotorPositionGet(device: u32) -> c_double;
         // fn vexDeviceMotorPositionRawGet(device: u32, timestamp: *mut u32) -> i32;
@@ -117,7 +116,7 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
         fn vexDeviceMotorVoltageSet(device: u32, voltage: i32);
         fn vexDeviceMotorVoltageGet(device: u32) -> i32;
         fn vexDeviceMotorGearingSet(device: u32, gearset: u32 as V5MotorGearset);
-        fn vexDeviceMotorGearingGet(device: u32) -> u32 as |x: V5MotorGearset| x.0;
+        fn vexDeviceMotorGearingGet(device: u32) -> u32 as V5MotorGearset;
         fn vexDeviceMotorVoltageLimitSet(device: u32, limit: i32);
         fn vexDeviceMotorVoltageLimitGet(device: u32) -> i32;
         fn vexDeviceMotorVelocityUpdate(device: u32, velocity: i32);
