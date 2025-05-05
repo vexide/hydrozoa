@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
 use alloc::{borrow::ToOwned, string::ToString};
-use core::ffi::c_double;
+use core::ffi::{c_double, c_uchar};
 
 use vex_sdk::{
     V5MotorBrakeMode, V5MotorControlMode, V5MotorEncoderUnits, V5MotorGearset, V5_ControllerId, V5_ControllerIndex, V5_ControllerStatus, V5_DeviceType
@@ -142,6 +142,87 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
         // Misc
         fn vexTasksRun();
         fn vexCompetitionStatus() -> u32;
+
+        enum V5_ControllerId: c_uchar {
+            kControllerMaster,
+            kControllerPartner,
+        }
+
+        enum V5_ControllerStatus: c_uchar {
+            kV5ControllerOffline,
+            kV5ControllerTethered,
+            kV5ControllerVexnet,
+        }
+
+        enum V5_ControllerIndex: c_uchar {
+            AnaLeftX,
+            AnaLeftY,
+            AnaRightX,
+            AnaRightY,
+            AnaSpare1,
+            AnaSpare2,
+            Button5U,
+            Button5D,
+            Button6U,
+            Button6D,
+            Button7U,
+            Button7D,
+            Button7L,
+            Button7R,
+            Button8U,
+            Button8D,
+            Button8L,
+            Button8R,
+            ButtonSEL,
+            BatteryLevel,
+            ButtonAll,
+            Flags,
+            BatteryCapacity,
+            Axis1,
+            Axis2,
+            Axis3,
+            Axis4,
+            ButtonL1,
+            ButtonL2,
+            ButtonR1,
+            ButtonR2,
+            ButtonUp,
+            ButtonDown,
+            ButtonLeft,
+            ButtonRight,
+            ButtonX,
+            ButtonB,
+            ButtonY,
+            ButtonA,
+        }
+
+        enum V5MotorBrakeMode: c_uchar {
+            kV5MotorBrakeModeCoast,
+            kV5MotorBrakeModeBrake,
+            kV5MotorBrakeModeHold,
+        }
+
+        enum V5MotorControlMode: c_uchar {
+            kMotorControlModeOFF,
+            kMotorControlModeBRAKE,
+            kMotorControlModeHOLD,
+            kMotorControlModeSERVO,
+            kMotorControlModePROFILE,
+            kMotorControlModeVELOCITY,
+            kMotorControlModeUNDEFINED,
+        }
+
+        enum V5MotorEncoderUnits: c_uchar {
+            kMotorEncoderDegrees,
+            kMotorEncoderRotations,
+            kMotorEncoderCounts,
+        }
+
+        enum V5MotorGearset: c_uchar {
+            kMotorGearSet_36,
+            kMotorGearSet_18,
+            kMotorGearSet_06,
+        }
     });
 
     instance.link_closure(

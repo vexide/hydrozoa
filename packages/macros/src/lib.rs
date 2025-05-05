@@ -6,7 +6,7 @@ use proc_macro_error::{abort, proc_macro_error};
 use quote::{quote, quote_spanned, ToTokens};
 use serialize::SdkModule;
 use syn::{
-    braced, parenthesized, parse::{Parse, ParseStream}, parse_macro_input, punctuated::Punctuated, spanned::Spanned, token::Paren, DeriveInput, Expr, FnArg, Ident, ReturnType, Token, Type, Variadic
+    braced, parenthesized, parse::{Parse, ParseStream, Parser}, parse_macro_input, punctuated::Punctuated, spanned::Spanned, token::{Brace, Paren}, DeriveInput, Expr, FnArg, Ident, ReturnType, Token, Type, Variadic
 };
 
 mod serialize;
@@ -176,7 +176,7 @@ struct LinkCall {
     instance_param: Expr,
     store_param: Expr,
     module_name: syn::LitStr,
-    module_items: Vec<LinkItem>,
+    module_items: Vec<LinkFunc>,
 }
 
 impl Parse for LinkCall {
@@ -210,7 +210,25 @@ impl Parse for LinkCall {
     }
 }
 
-struct LinkItem {
+enum LinkItem {
+    Func(LinkFunc),
+    Enum(LinkEnum),
+}
+
+impl Parse for LinkItem {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let lookahead = input.lookahead1();
+        if lookahead.peek(Token![enum]) {
+            Ok(Self::Enum(input.parse()?))
+        } else if lookahead.peek(Token![fn]) || lookahead.peek(kw::printf) {
+            Ok(Self::Func(input.parse()?))
+        } else {
+            Err(lookahead.error())
+        }
+    }
+}
+
+struct LinkFunc {
     printfness: Option<kw::printf>,
     fn_token: Token![fn],
     ident: Ident,
@@ -220,7 +238,7 @@ struct LinkItem {
     output: LinkItemReturnType,
 }
 
-impl Parse for LinkItem {
+impl Parse for LinkFunc {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let printfness = if input.peek(kw::printf) {
             Some(input.parse()?)
@@ -322,5 +340,44 @@ impl Parse for WrapperType {
         } else {
             Ok(Self::None)
         }
+    }
+}
+
+struct LinkEnum {
+    name: Ident,
+    underlying_type: Type,
+    brace_token: Brace,
+    variants: Punctuated<Ident, Token![,]>,
+}
+
+impl Parse for LinkEnum {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        input.parse::<Token![enum]>()?;
+        let name = input.parse()?;
+        input.parse::<Token![:]>()?;
+        let underlying_type = input.parse()?;
+
+        let content;
+        let brace = braced!(content in input);
+
+        let mut variants = Punctuated::new();
+        while !content.is_empty() {
+            let variant = content.parse()?;
+            variants.push_value(variant);
+
+            if content.is_empty() {
+                break;
+            }
+
+            let comma: Token![,] = content.parse()?;
+            variants.push_punct(comma);
+        }
+
+        Ok(Self {
+            name,
+            underlying_type,
+            brace_token: brace,
+            variants,
+        })
     }
 }

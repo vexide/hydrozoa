@@ -4,7 +4,7 @@ use proc_macro_error::{abort, diagnostic, emit_error, Level};
 use serde::Serialize;
 use syn::{spanned::Spanned, FnArg, Pat, PatType, Type};
 
-use crate::{LinkCall, LinkItem, LinkItemArg, LinkItemReturnType, WrapperType};
+use crate::{LinkCall, LinkFunc, LinkItemArg, LinkItemReturnType, WrapperType};
 
 #[derive(Serialize)]
 pub struct SdkModule {
@@ -35,7 +35,7 @@ pub struct SdkItem {
 }
 
 impl SdkItem {
-    pub fn new(item: &LinkItem) -> Option<Self> {
+    pub fn new(item: &LinkFunc) -> Option<Self> {
         let mut params = item.inputs.iter()
             .map(SdkItemParam::new)
             .collect::<Vec<_>>()
@@ -79,7 +79,7 @@ impl SdkItemParam {
         Some(Self {
             name: name.ident.to_string().replace("r#", ""),
             r#type: if let WrapperType::Convert(wrapper) = &arg.wrapper {
-                SdkType::Named(get_type_name(wrapper)?)
+                SdkType::Named { name: get_type_name(wrapper)? }
             } else {
                 SdkType::from_type(&fn_arg.ty)?
             },
@@ -88,6 +88,7 @@ impl SdkItemParam {
 }
 
 #[derive(Serialize)]
+#[serde(tag = "type")]
 enum SdkType {
     Bool,
     Int,
@@ -95,7 +96,7 @@ enum SdkType {
     Float,
     Double,
     StringPtr,
-    Named(String)
+    Named { name: String }
 }
 
 impl SdkType {
@@ -121,7 +122,7 @@ impl SdkType {
             LinkItemReturnType::Default => None,
             LinkItemReturnType::Type { return_type, wrapper, .. } => {
                 if let WrapperType::Convert(wrapper) = wrapper {
-                    Some(Self::Named(get_type_name(wrapper)?))
+                    Some(Self::Named { name: get_type_name(wrapper)? })
                 } else {
                     Self::from_type(return_type)
                 }
