@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use proc_macro_error::{abort, diagnostic, emit_error, Level};
 use serde::Serialize;
-use syn::{spanned::Spanned, FnArg, Pat, PatType, Type};
+use syn::{ext::IdentExt, spanned::Spanned, FnArg, Pat, PatType, Type};
 
-use crate::{LinkCall, LinkFunc, LinkItemArg, LinkItemReturnType, WrapperType};
+use crate::{LinkCall, LinkEnum, LinkFunc, LinkItem, LinkItemArg, LinkItemReturnType, WrapperType};
 
 #[derive(Serialize)]
 pub struct SdkModule {
@@ -18,11 +18,19 @@ impl SdkModule {
         Some(Self {
             name: data.module_name.value(),
             items: data.module_items.iter()
+                .filter_map(|item| match item {
+                    LinkItem::Func(func) => Some(func),
+                    _ => None,
+                })
                 .map(SdkItem::new)
-                .collect::<Vec<_>>()
-                .into_iter()
                 .collect::<Option<Vec<_>>>()?,
-            enums: vec![],
+            enums: data.module_items.iter()
+                .filter_map(|item| match item {
+                    LinkItem::Enum(link_enum) => Some(link_enum),
+                    _ => None,
+                })
+                .map(SdkEnum::new)
+                .collect::<Option<Vec<_>>>()?,
         })
     }
 }
@@ -47,7 +55,7 @@ impl SdkItem {
         }
 
         Some(Self {
-            name: item.ident.to_string().replace("r#", ""),
+            name: item.ident.unraw().to_string(),
             params,
             returns: SdkType::from_return_type(&item.output)?,
         })
@@ -77,7 +85,7 @@ impl SdkItemParam {
         };
 
         Some(Self {
-            name: name.ident.to_string().replace("r#", ""),
+            name: name.ident.unraw().to_string(),
             r#type: if let WrapperType::Convert(wrapper) = &arg.wrapper {
                 SdkType::Named { name: get_type_name(wrapper)? }
             } else {
@@ -105,7 +113,7 @@ impl SdkType {
 
         Some(match &*type_name {
             "bool" => Self::Bool,
-            "i32" | "u32" => Self::Int,
+            "i32" | "u32" | "c_uchar" => Self::Int,
             "i64" | "u64" => Self::Long,
             "f32" | "c_float" => Self::Float,
             "f64" | "c_double" => Self::Double,
@@ -135,7 +143,29 @@ impl SdkType {
 pub struct SdkEnum {
     name: String,
     underlying_type: SdkType,
-    variants: HashMap<String, f64>,
+    variants: HashMap<String, i64>,
+}
+
+impl SdkEnum {
+    pub fn new(item: &LinkEnum) -> Option<Self> {
+        Some(Self {
+            name: item.name.unraw().to_string(),
+            underlying_type: SdkType::from_type(&item.underlying_type)?,
+            variants: item.variants.iter()
+                .map(|(variant, value)| {
+                    let parsed = value.base10_parse::<i64>();
+                    let parsed = match parsed {
+                        Ok(val) => val,
+                        Err(err) => {
+                            emit_error!(err.span(), "Failed to parse enum value: {}", err);
+                            return None;
+                        }
+                    };
+                    Some((variant.unraw().to_string(), parsed))
+                })
+                .collect::<Option<HashMap<_, _>>>()?,
+        })
+    }
 }
 
 fn get_type_name(ty: &Type) -> Option<String> {

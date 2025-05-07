@@ -6,7 +6,7 @@ use proc_macro_error::{abort, proc_macro_error};
 use quote::{quote, quote_spanned, ToTokens};
 use serialize::SdkModule;
 use syn::{
-    braced, parenthesized, parse::{Parse, ParseStream, Parser}, parse_macro_input, punctuated::Punctuated, spanned::Spanned, token::{Brace, Paren}, DeriveInput, Expr, FnArg, Ident, ReturnType, Token, Type, Variadic
+    braced, parenthesized, parse::{Parse, ParseStream, Parser}, parse_macro_input, punctuated::Punctuated, spanned::Spanned, token::{Brace, Paren}, DeriveInput, Expr, FnArg, Ident, LitInt, ReturnType, Token, Type, Variadic
 };
 
 mod serialize;
@@ -83,6 +83,10 @@ pub fn link(input: TokenStream) -> TokenStream {
 
     let mut item_tokens = vec![];
     for item in module_items {
+        let LinkItem::Func(item) = item else {
+            continue;
+        };
+
         let name = item.ident;
 
         let mut args = vec![];
@@ -176,7 +180,7 @@ struct LinkCall {
     instance_param: Expr,
     store_param: Expr,
     module_name: syn::LitStr,
-    module_items: Vec<LinkFunc>,
+    module_items: Vec<LinkItem>,
 }
 
 impl Parse for LinkCall {
@@ -197,8 +201,6 @@ impl Parse for LinkCall {
         while !content.is_empty() {
             let item = content.parse()?;
             items.push(item);
-
-            content.parse::<Token![;]>()?;
         }
 
         Ok(Self {
@@ -272,6 +274,8 @@ impl Parse for LinkFunc {
         }
 
         let output = input.parse()?;
+
+        input.parse::<Token![;]>()?;
 
         Ok(Self {
             printfness,
@@ -347,7 +351,7 @@ struct LinkEnum {
     name: Ident,
     underlying_type: Type,
     brace_token: Brace,
-    variants: Punctuated<Ident, Token![,]>,
+    variants: Punctuated<(Ident, LitInt), Token![,]>,
 }
 
 impl Parse for LinkEnum {
@@ -363,7 +367,10 @@ impl Parse for LinkEnum {
         let mut variants = Punctuated::new();
         while !content.is_empty() {
             let variant = content.parse()?;
-            variants.push_value(variant);
+            content.parse::<Token![=]>()?;
+            let value = content.parse()?;
+
+            variants.push_value((variant, value));
 
             if content.is_empty() {
                 break;

@@ -144,84 +144,68 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
         fn vexCompetitionStatus() -> u32;
 
         enum V5_ControllerId: c_uchar {
-            kControllerMaster,
-            kControllerPartner,
+            kControllerMaster = 0,
+            kControllerPartner = 1,
         }
 
         enum V5_ControllerStatus: c_uchar {
-            kV5ControllerOffline,
-            kV5ControllerTethered,
-            kV5ControllerVexnet,
+            kV5ControllerOffline = 0,
+            kV5ControllerTethered = 1,
+            kV5ControllerVexnet = 2,
         }
 
         enum V5_ControllerIndex: c_uchar {
-            AnaLeftX,
-            AnaLeftY,
-            AnaRightX,
-            AnaRightY,
-            AnaSpare1,
-            AnaSpare2,
-            Button5U,
-            Button5D,
-            Button6U,
-            Button6D,
-            Button7U,
-            Button7D,
-            Button7L,
-            Button7R,
-            Button8U,
-            Button8D,
-            Button8L,
-            Button8R,
-            ButtonSEL,
-            BatteryLevel,
-            ButtonAll,
-            Flags,
-            BatteryCapacity,
-            Axis1,
-            Axis2,
-            Axis3,
-            Axis4,
-            ButtonL1,
-            ButtonL2,
-            ButtonR1,
-            ButtonR2,
-            ButtonUp,
-            ButtonDown,
-            ButtonLeft,
-            ButtonRight,
-            ButtonX,
-            ButtonB,
-            ButtonY,
-            ButtonA,
+            AnaLeftX = 0,
+            AnaLeftY = 1,
+            AnaRightX = 2,
+            AnaRightY = 3,
+            AnaSpare1 = 4,
+            AnaSpare2 = 5,
+            Button5U = 6,
+            Button5D = 7,
+            Button6U = 8,
+            Button6D = 9,
+            Button7U = 10,
+            Button7D = 11,
+            Button7L = 12,
+            Button7R = 13,
+            Button8U = 14,
+            Button8D = 15,
+            Button8L = 16,
+            Button8R = 17,
+            ButtonSEL = 18,
+            BatteryLevel = 19,
+            ButtonAll = 20,
+            Flags = 21,
+            BatteryCapacity = 22,
         }
 
         enum V5MotorBrakeMode: c_uchar {
-            kV5MotorBrakeModeCoast,
-            kV5MotorBrakeModeBrake,
-            kV5MotorBrakeModeHold,
+            kV5MotorBrakeModeCoast = 0,
+            kV5MotorBrakeModeBrake = 1,
+            kV5MotorBrakeModeHold = 2,
         }
 
         enum V5MotorControlMode: c_uchar {
-            kMotorControlModeOFF,
-            kMotorControlModeBRAKE,
-            kMotorControlModeHOLD,
-            kMotorControlModeSERVO,
-            kMotorControlModePROFILE,
-            kMotorControlModeVELOCITY,
-            kMotorControlModeUNDEFINED,
+            kMotorControlModeOFF = 0,
+            kMotorControlModeBRAKE = 1,
+            kMotorControlModeHOLD = 2,
+            kMotorControlModeSERVO = 3,
+            kMotorControlModePROFILE = 4,
+            kMotorControlModeVELOCITY = 5,
+            kMotorControlModeUNDEFINED = 6,
         }
 
         enum V5MotorEncoderUnits: c_uchar {
-            kMotorEncoderDegrees,
-            kMotorEncoderRotations,
-            kMotorEncoderCounts,
+            kMotorEncoderDegrees = 0,
+            kMotorEncoderRotations = 1,
+            kMotorEncoderCounts = 2,
         }
 
         enum V5MotorGearset: c_uchar {
-            kMotorGearSet_36,
-            kMotorGearSet_18,
-            kMotorGearSet_06,
+            kMotorGearSet_36 = 0,
+            kMotorGearSet_18 = 1,
+            kMotorGearSet_06 = 2,
         }
     });
 
