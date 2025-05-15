@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use proc_macro_error::{abort, diagnostic, emit_error, Level};
+use proc_macro_error::{Level, abort, diagnostic, emit_error};
 use serde::Serialize;
-use syn::{ext::IdentExt, spanned::Spanned, FnArg, Pat, PatType, Type};
+use syn::{FnArg, Pat, PatType, Type, ext::IdentExt, spanned::Spanned};
 
 use crate::{LinkCall, LinkEnum, LinkFunc, LinkItem, LinkItemArg, LinkItemReturnType, WrapperType};
 
@@ -17,14 +17,18 @@ impl SdkModule {
     pub fn new(data: &LinkCall) -> Option<Self> {
         Some(Self {
             name: data.module_name.value(),
-            items: data.module_items.iter()
+            items: data
+                .module_items
+                .iter()
                 .filter_map(|item| match item {
                     LinkItem::Func(func) => Some(func),
                     _ => None,
                 })
                 .map(SdkItem::new)
                 .collect::<Option<Vec<_>>>()?,
-            enums: data.module_items.iter()
+            enums: data
+                .module_items
+                .iter()
                 .filter_map(|item| match item {
                     LinkItem::Enum(link_enum) => Some(link_enum),
                     _ => None,
@@ -44,14 +48,19 @@ pub struct SdkItem {
 
 impl SdkItem {
     pub fn new(item: &LinkFunc) -> Option<Self> {
-        let mut params = item.inputs.iter()
+        let mut params = item
+            .inputs
+            .iter()
             .map(SdkItemParam::new)
             .collect::<Vec<_>>()
             .into_iter()
             .collect::<Option<Vec<_>>>()?;
 
         if item.printfness.is_some() {
-            params.push(SdkItemParam { name: "string".to_string(), r#type: SdkType::StringPtr });
+            params.push(SdkItemParam {
+                name: "string".to_string(),
+                r#type: SdkType::StringPtr,
+            });
         }
 
         Some(Self {
@@ -87,7 +96,9 @@ impl SdkItemParam {
         Some(Self {
             name: name.ident.unraw().to_string(),
             r#type: if let WrapperType::Convert(wrapper) = &arg.wrapper {
-                SdkType::Named { name: get_type_name(wrapper)? }
+                SdkType::Named {
+                    name: get_type_name(wrapper)?,
+                }
             } else {
                 SdkType::from_type(&fn_arg.ty)?
             },
@@ -104,7 +115,7 @@ enum SdkType {
     Float,
     Double,
     StringPtr,
-    Named { name: String }
+    Named { name: String },
 }
 
 impl SdkType {
@@ -113,7 +124,7 @@ impl SdkType {
 
         Some(match &*type_name {
             "bool" => Self::Bool,
-            "i32" | "u32" | "c_uchar" => Self::Int,
+            "i32" | "u32" | "c_uchar" | "usize" => Self::Int,
             "i64" | "u64" => Self::Long,
             "f32" | "c_float" => Self::Float,
             "f64" | "c_double" => Self::Double,
@@ -128,9 +139,15 @@ impl SdkType {
     pub fn from_return_type(output: &LinkItemReturnType) -> Option<Option<Self>> {
         Some(match output {
             LinkItemReturnType::Default => None,
-            LinkItemReturnType::Type { return_type, wrapper, .. } => {
+            LinkItemReturnType::Type {
+                return_type,
+                wrapper,
+                ..
+            } => {
                 if let WrapperType::Convert(wrapper) = wrapper {
-                    Some(Self::Named { name: get_type_name(wrapper)? })
+                    Some(Self::Named {
+                        name: get_type_name(wrapper)?,
+                    })
                 } else {
                     Self::from_type(return_type)
                 }
@@ -151,7 +168,9 @@ impl SdkEnum {
         Some(Self {
             name: item.name.unraw().to_string(),
             underlying_type: SdkType::from_type(&item.underlying_type)?,
-            variants: item.variants.iter()
+            variants: item
+                .variants
+                .iter()
                 .map(|(variant, value)| {
                     let parsed = value.base10_parse::<i64>();
                     let parsed = match parsed {
@@ -172,11 +191,16 @@ fn get_type_name(ty: &Type) -> Option<String> {
     let path = if let Type::Path(path) = ty {
         path
     } else {
-        emit_error!(ty, "This type is not allowed because it can't be represented in the API description format");
+        emit_error!(
+            ty,
+            "This type is not allowed because it can't be represented in the API description format"
+        );
         return None;
     };
 
-    let name = path.path.segments
+    let name = path
+        .path
+        .segments
         .iter()
         .map(|seg| seg.ident.to_string())
         .collect::<Vec<_>>()

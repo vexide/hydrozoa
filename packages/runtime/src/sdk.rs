@@ -3,12 +3,13 @@
 use alloc::{borrow::ToOwned, string::ToString};
 use core::ffi::{c_double, c_uchar};
 
+use hydrozoa_macros::link;
 use vex_sdk::{
-    V5MotorBrakeMode, V5MotorControlMode, V5MotorEncoderUnits, V5MotorGearset, V5_ControllerId, V5_ControllerIndex, V5_ControllerStatus, V5_DeviceType
+    V5MotorBrakeMode, V5MotorControlMode, V5MotorEncoderUnits, V5MotorGearset, V5_ControllerId,
+    V5_ControllerIndex, V5_ControllerStatus, V5_DeviceType
 };
 use vexide::{io::println, prelude::Display};
 use wasm3::{error::Trap, store::AsContextMut, Instance, Store};
-use hydrozoa_macros::link;
 
 use crate::{platform::draw_error, teavm::get_cstring, Data};
 
@@ -32,7 +33,7 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
             }
         },
     )?;
-    
+
     link!(instance, store, mod "vex" {
         // Display
         fn vexDisplayForegroundColor(col: u32);
@@ -59,7 +60,7 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
         fn vexDisplayDoubleBufferDisable();
         fn vexDisplayClipRegionSetWithIndex(index: i32, x1: i32, y1: i32, x2: i32, y2: i32);
         // These functions have an additional C-string parameter that isn't shown in the signature.
-        printf fn vexDisplayPrintf(xpos: i32, ypos: i32, bOpaque: i32);
+        printf fn vexDisplayPrintf(xpos: i32, ypos: i32, bOpaque: bool);
         printf fn vexDisplayString(nLineNumber: i32);
         printf fn vexDisplayStringAt(xpos: i32, ypos: i32);
         printf fn vexDisplayBigString(nLineNumber: i32);
@@ -67,6 +68,10 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
         printf fn vexDisplaySmallStringAt(xpos: i32, ypos: i32);
         printf fn vexDisplayCenteredString(nLineNumber: i32);
         printf fn vexDisplayBigCenteredString(nLineNumber: i32);
+        declare printf fn vexDisplayStringWidthGet() -> i32;
+        declare printf fn vexDisplayStringHeightGet() -> i32;
+        declare printf fn vexDisplayFontNamedSet();
+
         // fn vexImageBmpRead(ibuf: *const u8, oBuf: *mut v5_image, maxw: u32, maxh: u32) -> u32;
         // fn vexImagePngRead(ibuf: *const u8, oBuf: *mut v5_image, maxw: u32, maxh: u32, ibuflen: u32) -> u32;
 
@@ -78,51 +83,51 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
         fn vexDeviceGetByIndex(index: u32) -> u32;
 
         // Motor
-        fn vexDeviceMotorVelocitySet(device: u32, velocity: i32);
-        fn vexDeviceMotorVelocityGet(device: u32) -> i32;
-        fn vexDeviceMotorActualVelocityGet(device: u32) -> c_double;
-        fn vexDeviceMotorDirectionGet(device: u32) -> i32;
-        fn vexDeviceMotorModeSet(device: u32, mode: u32 as V5MotorControlMode);
-        fn vexDeviceMotorModeGet(device: u32) -> u32 as V5MotorControlMode;
-        fn vexDeviceMotorPwmSet(device: u32, pwm: i32);
-        fn vexDeviceMotorPwmGet(device: u32) -> i32;
-        fn vexDeviceMotorCurrentLimitSet(device: u32, limit: i32);
-        fn vexDeviceMotorCurrentLimitGet(device: u32) -> i32;
-        fn vexDeviceMotorCurrentGet(device: u32) -> i32;
-        fn vexDeviceMotorPowerGet(device: u32) -> c_double;
-        fn vexDeviceMotorTorqueGet(device: u32) -> c_double;
-        fn vexDeviceMotorEfficiencyGet(device: u32) -> c_double;
-        fn vexDeviceMotorTemperatureGet(device: u32) -> c_double;
-        fn vexDeviceMotorOverTempFlagGet(device: u32) -> bool;
-        fn vexDeviceMotorCurrentLimitFlagGet(device: u32) -> bool;
-        fn vexDeviceMotorZeroVelocityFlagGet(device: u32) -> bool;
-        fn vexDeviceMotorZeroPositionFlagGet(device: u32) -> bool;
-        fn vexDeviceMotorReverseFlagSet(device: u32, reverse: bool);
-        fn vexDeviceMotorReverseFlagGet(device: u32) -> bool;
-        fn vexDeviceMotorEncoderUnitsSet(device: u32, units: u32 as V5MotorEncoderUnits);
-        fn vexDeviceMotorEncoderUnitsGet(device: u32) -> u32 as V5MotorEncoderUnits;
-        fn vexDeviceMotorBrakeModeSet(device: u32, mode: u32 as V5MotorBrakeMode);
-        fn vexDeviceMotorBrakeModeGet(device: u32) -> u32 as V5MotorBrakeMode;
-        fn vexDeviceMotorPositionSet(device: u32, position: c_double);
-        fn vexDeviceMotorPositionGet(device: u32) -> c_double;
-        // fn vexDeviceMotorPositionRawGet(device: u32, timestamp: *mut u32) -> i32;
-        fn vexDeviceMotorPositionReset(device: u32);
-        fn vexDeviceMotorTargetGet(device: u32) -> c_double;
-        fn vexDeviceMotorServoTargetSet(device: u32, position: c_double);
-        fn vexDeviceMotorAbsoluteTargetSet(device: u32, position: c_double, veloctiy: i32);
-        fn vexDeviceMotorRelativeTargetSet(device: u32, position: c_double, velocity: i32);
-        fn vexDeviceMotorFaultsGet(device: u32) -> u32;
-        fn vexDeviceMotorFlagsGet(device: u32) -> u32;
-        fn vexDeviceMotorVoltageSet(device: u32, voltage: i32);
-        fn vexDeviceMotorVoltageGet(device: u32) -> i32;
-        fn vexDeviceMotorGearingSet(device: u32, gearset: u32 as V5MotorGearset);
-        fn vexDeviceMotorGearingGet(device: u32) -> u32 as V5MotorGearset;
-        fn vexDeviceMotorVoltageLimitSet(device: u32, limit: i32);
-        fn vexDeviceMotorVoltageLimitGet(device: u32) -> i32;
-        fn vexDeviceMotorVelocityUpdate(device: u32, velocity: i32);
-        // fn vexDeviceMotorPositionPidSet(device: u32, pid: *mut V5_DeviceMotorPid);
-        // fn vexDeviceMotorVelocityPidSet(device: u32, pid: *mut V5_DeviceMotorPid);
-        fn vexDeviceMotorExternalProfileSet(device: u32, position: c_double, velocity: i32);
+        fn vexDeviceMotorVelocitySet(device: u32 as V5_Device, velocity: i32);
+        fn vexDeviceMotorVelocityGet(device: u32 as V5_Device) -> i32;
+        fn vexDeviceMotorActualVelocityGet(device: u32 as V5_Device) -> c_double;
+        fn vexDeviceMotorDirectionGet(device: u32 as V5_Device) -> i32;
+        fn vexDeviceMotorModeSet(device: u32 as V5_Device, mode: u32 as V5MotorControlMode);
+        fn vexDeviceMotorModeGet(device: u32 as V5_Device) -> u32 as V5MotorControlMode;
+        fn vexDeviceMotorPwmSet(device: u32 as V5_Device, pwm: i32);
+        fn vexDeviceMotorPwmGet(device: u32 as V5_Device) -> i32;
+        fn vexDeviceMotorCurrentLimitSet(device: u32 as V5_Device, limit: i32);
+        fn vexDeviceMotorCurrentLimitGet(device: u32 as V5_Device) -> i32;
+        fn vexDeviceMotorCurrentGet(device: u32 as V5_Device) -> i32;
+        fn vexDeviceMotorPowerGet(device: u32 as V5_Device) -> c_double;
+        fn vexDeviceMotorTorqueGet(device: u32 as V5_Device) -> c_double;
+        fn vexDeviceMotorEfficiencyGet(device: u32 as V5_Device) -> c_double;
+        fn vexDeviceMotorTemperatureGet(device: u32 as V5_Device) -> c_double;
+        fn vexDeviceMotorOverTempFlagGet(device: u32 as V5_Device) -> bool;
+        fn vexDeviceMotorCurrentLimitFlagGet(device: u32 as V5_Device) -> bool;
+        fn vexDeviceMotorZeroVelocityFlagGet(device: u32 as V5_Device) -> bool;
+        fn vexDeviceMotorZeroPositionFlagGet(device: u32 as V5_Device) -> bool;
+        fn vexDeviceMotorReverseFlagSet(device: u32 as V5_Device, reverse: bool);
+        fn vexDeviceMotorReverseFlagGet(device: u32 as V5_Device) -> bool;
+        fn vexDeviceMotorEncoderUnitsSet(device: u32 as V5_Device, units: u32 as V5MotorEncoderUnits);
+        fn vexDeviceMotorEncoderUnitsGet(device: u32 as V5_Device) -> u32 as V5MotorEncoderUnits;
+        fn vexDeviceMotorBrakeModeSet(device: u32 as V5_Device, mode: u32 as V5MotorBrakeMode);
+        fn vexDeviceMotorBrakeModeGet(device: u32 as V5_Device) -> u32 as V5MotorBrakeMode;
+        fn vexDeviceMotorPositionSet(device: u32 as V5_Device, position: c_double);
+        fn vexDeviceMotorPositionGet(device: u32 as V5_Device) -> c_double;
+        // fn vexDeviceMotorPositionRawGet(device: u32 as V5_Device, timestamp: *mut u32) -> i32;
+        fn vexDeviceMotorPositionReset(device: u32 as V5_Device);
+        fn vexDeviceMotorTargetGet(device: u32 as V5_Device) -> c_double;
+        fn vexDeviceMotorServoTargetSet(device: u32 as V5_Device, position: c_double);
+        fn vexDeviceMotorAbsoluteTargetSet(device: u32 as V5_Device, position: c_double, veloctiy: i32);
+        fn vexDeviceMotorRelativeTargetSet(device: u32 as V5_Device, position: c_double, velocity: i32);
+        fn vexDeviceMotorFaultsGet(device: u32 as V5_Device) -> u32;
+        fn vexDeviceMotorFlagsGet(device: u32 as V5_Device) -> u32;
+        fn vexDeviceMotorVoltageSet(device: u32 as V5_Device, voltage: i32);
+        fn vexDeviceMotorVoltageGet(device: u32 as V5_Device) -> i32;
+        fn vexDeviceMotorGearingSet(device: u32 as V5_Device, gearset: u32 as V5MotorGearset);
+        fn vexDeviceMotorGearingGet(device: u32 as V5_Device) -> u32 as V5MotorGearset;
+        fn vexDeviceMotorVoltageLimitSet(device: u32 as V5_Device, limit: i32);
+        fn vexDeviceMotorVoltageLimitGet(device: u32 as V5_Device) -> i32;
+        fn vexDeviceMotorVelocityUpdate(device: u32 as V5_Device, velocity: i32);
+        // fn vexDeviceMotorPositionPidSet(device: u32 as V5_Device, pid: *mut V5_DeviceMotorPid);
+        // fn vexDeviceMotorVelocityPidSet(device: u32 as V5_Device, pid: *mut V5_DeviceMotorPid);
+        fn vexDeviceMotorExternalProfileSet(device: u32 as V5_Device, position: c_double, velocity: i32);
 
         // Serial
         fn vexSerialWriteChar(channel: u32, c: u32) -> i32;
@@ -178,6 +183,23 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
             ButtonAll = 20,
             Flags = 21,
             BatteryCapacity = 22,
+
+            Axis1 = /* AnaRightX */ 2,
+            Axis2 = /* AnaRightY */ 3,
+            Axis3 = /* AnaLeftY */ 1,
+            Axis4 = /* AnaLeftX */ 0,
+            ButtonL1 = /* Button5U */ 6,
+            ButtonL2 = /* Button5D */ 7,
+            ButtonR1 = /* Button6U */ 8,
+            ButtonR2 = /* Button6D */ 9,
+            ButtonUp = /* Button7U */ 10,
+            ButtonDown = /* Button7D */ 11,
+            ButtonLeft = /* Button7L */ 12,
+            ButtonRight = /* Button7R */ 13,
+            ButtonX = /* Button8U */ 14,
+            ButtonB = /* Button8D */ 15,
+            ButtonY = /* Button8L */ 16,
+            ButtonA = /* Button8R */ 17,
         }
 
         enum V5MotorBrakeMode: c_uchar {
@@ -206,6 +228,10 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
             kMotorGearSet_36 = 0,
             kMotorGearSet_18 = 1,
             kMotorGearSet_06 = 2,
+        }
+
+        enum V5_Device: usize {
+
         }
     });
 
@@ -257,3 +283,5 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
 
     Ok(())
 }
+
+fn V5_Device<T>(x: T) -> T { x }

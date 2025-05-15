@@ -4,7 +4,10 @@ use alloc::{ffi::CString, rc::Rc, string::String};
 use core::str;
 
 use anyhow::{Context, Result};
-use vexide::{io::{print, println}, time::Instant};
+use vexide::{
+    io::{print, println},
+    time::Instant,
+};
 use wasm3::{
     store::{AsContextMut, StoreContextMut},
     Function, Instance, Store,

@@ -3,10 +3,16 @@ use std::path::PathBuf;
 
 use proc_macro::TokenStream;
 use proc_macro_error::{abort, proc_macro_error};
-use quote::{quote, quote_spanned, ToTokens};
+use quote::{ToTokens, quote, quote_spanned};
 use serialize::SdkModule;
 use syn::{
-    braced, parenthesized, parse::{Parse, ParseStream, Parser}, parse_macro_input, punctuated::Punctuated, spanned::Spanned, token::{Brace, Paren}, DeriveInput, Expr, FnArg, Ident, LitInt, ReturnType, Token, Type, Variadic
+    DeriveInput, Expr, FnArg, Ident, LitInt, ReturnType, Token, Type, Variadic, braced,
+    parenthesized,
+    parse::{Parse, ParseStream, Parser},
+    parse_macro_input,
+    punctuated::Punctuated,
+    spanned::Spanned,
+    token::{Brace, Paren},
 };
 
 mod serialize;
@@ -14,45 +20,45 @@ mod serialize;
 /// Register a set of VEX SDK functions such that they can be accessed from the given
 /// WASM `instance` using the given `store` by importing them from the specified
 /// module name.
-/// 
+///
 /// For example, the following code will create a function in the WASM module `module_name`
 /// named `my_func` which calls `vex_sdk::my_func` and returns a WASM I32.
-/// 
+///
 /// ```
 /// link!(instance, store, mod "module_name" {
 ///     fn my_func() -> i32;
 /// });
 /// ```
-/// 
+///
 /// You can optionally specify wrapper expressions on arguments to aid in conversion from the raw
 /// WASM type (limited to i32, i64, f32, f64, v128, funcref, externref) to something `vex_sdk`
 /// expects.
-/// 
+///
 /// ```
 /// link!(instance, store, mod "module_name" {
 ///     // Wraps `vex_sdk::my_func_raw(a: i32)`
 ///     fn my_func_raw(a: i32);
-/// 
+///
 ///     // Wraps `vex_sdk::my_func(a: ControllerId)`
 ///     fn my_func(a: i32 as |x| ControllerId(x));
-/// 
+///
 ///     // Equivalent to above
 ///     fn my_func(a: i32 as ControllerId);
 /// });
 /// ```
-/// 
+///
 /// The opposite can be done with return types to aid in conversion back to a raw WASM type.
-/// 
+///
 /// ```
 /// link!(instance, store, mod "module_name" {
 ///     // Wraps `vex_sdk::my_func_raw() -> i32`
 ///     fn my_func_raw() -> i32;
-/// 
+///
 ///     // Wraps `vex_sdk::my_func() -> ControllerId`
 ///     fn my_func() -> i32 as |id| id.0;
 /// });
 /// ```
-/// 
+///
 /// You can also specify a function as `printf fn` to automatically add an extra C-string parameter to the WASM function
 /// which is passed to the underlying `vex_sdk` call using the `"%s"` format specifier.
 #[proc_macro_error]
@@ -66,7 +72,7 @@ pub fn link(input: TokenStream) -> TokenStream {
     }
 
     let json = serde_json::to_vec_pretty(&serialized).unwrap();
-    
+
     let out_file = PathBuf::from(env!("OUT_DIR"))
         .ancestors()
         .nth(3)
@@ -87,6 +93,10 @@ pub fn link(input: TokenStream) -> TokenStream {
             continue;
         };
 
+        if item.declareness.is_some() {
+            continue;
+        }
+
         let name = item.ident;
 
         let mut args = vec![];
@@ -94,7 +104,6 @@ pub fn link(input: TokenStream) -> TokenStream {
         let mut arg_wrappers = vec![];
 
         for input in item.inputs {
-
             let arg;
             if let FnArg::Typed(inner) = input.fn_arg {
                 arg = inner;
@@ -132,11 +141,12 @@ pub fn link(input: TokenStream) -> TokenStream {
 
         let mut return_wrapper = quote! {};
         let mut return_type = quote! { () };
-        if let LinkItemReturnType::Type { 
-            return_type: inner, 
+        if let LinkItemReturnType::Type {
+            return_type: inner,
             wrapper,
             ..
-        } = item.output {
+        } = item.output
+        {
             if let WrapperType::Convert(wrapper) = wrapper {
                 let span = wrapper.span();
                 return_wrapper = quote_spanned! {span=> (|x: #wrapper| x.0)};
@@ -169,11 +179,13 @@ pub fn link(input: TokenStream) -> TokenStream {
 
     quote! {
         #(#item_tokens)*
-    }.into()
+    }
+    .into()
 }
 
 mod kw {
     syn::custom_keyword!(printf);
+    syn::custom_keyword!(declare);
 }
 
 struct LinkCall {
@@ -222,7 +234,10 @@ impl Parse for LinkItem {
         let lookahead = input.lookahead1();
         if lookahead.peek(Token![enum]) {
             Ok(Self::Enum(input.parse()?))
-        } else if lookahead.peek(Token![fn]) || lookahead.peek(kw::printf) {
+        } else if lookahead.peek(Token![fn])
+            || lookahead.peek(kw::printf)
+            || lookahead.peek(kw::declare)
+        {
             Ok(Self::Func(input.parse()?))
         } else {
             Err(lookahead.error())
@@ -231,6 +246,7 @@ impl Parse for LinkItem {
 }
 
 struct LinkFunc {
+    declareness: Option<kw::declare>,
     printfness: Option<kw::printf>,
     fn_token: Token![fn],
     ident: Ident,
@@ -242,12 +258,37 @@ struct LinkFunc {
 
 impl Parse for LinkFunc {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let printfness = if input.peek(kw::printf) {
-            Some(input.parse()?)
-        } else {
-            None
-        };
-        let fn_token = input.parse()?;
+        let mut declareness = None;
+        let mut printfness = None;
+
+        let fn_token;
+        loop {
+            // OK: declare printf fn
+            // OK: declare fn
+            // OK: fn
+            // ERR: fn printf
+            // ERR: printf declare fn
+
+            let lookahead = input.lookahead1();
+
+            if lookahead.peek(Token![fn]) {
+                fn_token = input.parse()?;
+                break;
+            }
+
+            if printfness.is_none() && lookahead.peek(kw::printf) {
+                printfness = Some(input.parse()?);
+                continue;
+            }
+
+            if declareness.is_none() && lookahead.peek(kw::declare) {
+                declareness = Some(input.parse()?);
+                continue;
+            }
+
+            return Err(lookahead.error());
+        }
+
         let ident = input.parse()?;
 
         let content;
@@ -278,6 +319,7 @@ impl Parse for LinkFunc {
         input.parse::<Token![;]>()?;
 
         Ok(Self {
+            declareness,
             printfness,
             fn_token,
             ident,
