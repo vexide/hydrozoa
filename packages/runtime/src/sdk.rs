@@ -129,6 +129,8 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
         // fn vexDeviceMotorVelocityPidSet(device: u32 as V5_Device, pid: *mut V5_DeviceMotorPid);
         fn vexDeviceMotorExternalProfileSet(device: u32 as V5_Device, position: c_double, velocity: i32);
 
+        declare fn vexDeviceGetStatus(devices: *mut V5_DeviceType) -> i32;
+
         // Serial
         fn vexSerialWriteChar(channel: u32, c: u32) -> i32;
         fn vexSerialReadChar(channel: u32) -> i32;
@@ -232,6 +234,38 @@ pub fn link(store: &mut Store<Data>, instance: &mut Instance<Data>) -> anyhow::R
 
         enum V5_Device: usize {
 
+        }
+
+        enum V5_DeviceType: c_uchar {
+            kDeviceTypeNoSensor = 0,
+            kDeviceTypeMotorSensor = 2,
+            kDeviceTypeLedSensor = 3,
+            kDeviceTypeAbsEncSensor = 4,
+            kDeviceTypeCrMotorSensor = 5,
+            kDeviceTypeImuSensor = 6,
+            kDeviceTypeDistanceSensor = 7,
+            kDeviceTypeRadioSensor = 8,
+            kDeviceTypeTetherSensor = 9,
+            kDeviceTypeBrainSensor = 10,
+            kDeviceTypeVisionSensor = 11,
+            kDeviceTypeAdiSensor = 12,
+            kDeviceTypeRes1Sensor = 13,
+            kDeviceTypeRes2Sensor = 14,
+            kDeviceTypeRes3Sensor = 15,
+            kDeviceTypeOpticalSensor = 16,
+            kDeviceTypeMagnetSensor = 17,
+            kDeviceTypeGpsSensor = 20,
+            kDeviceTypeAicameraSensor = 26,
+            kDeviceTypeLightTowerSensor = 27,
+            kDeviceTypeArmDevice = 28,
+            kDeviceTypeAiVisionSensor = 29,
+            kDeviceTypePneumaticSensor = 30,
+            kDeviceTypeBumperSensor = 0x40,
+            kDeviceTypeGyroSensor = 0x46,
+            kDeviceTypeSonarSensor = 0x47,
+            kDeviceTypeGenericSensor = 128,
+            kDeviceTypeGenericSerial = 129,
+            kDeviceTypeUndefinedSensor = 255,
         }
     });
 

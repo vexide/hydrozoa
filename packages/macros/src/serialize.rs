@@ -115,11 +115,18 @@ enum SdkType {
     Float,
     Double,
     StringPtr,
+    Pointer { destination: Box<SdkType>, },
     Named { name: String },
 }
 
 impl SdkType {
     pub fn from_type(ty: &Type) -> Option<Self> {
+        if let Type::Ptr(ptr) = ty {
+            return Some(Self::Pointer { 
+                destination: Box::new(SdkType::from_type(&ptr.elem)?),
+            });
+        }
+
         let type_name = get_type_name(ty)?;
 
         Some(match &*type_name {
@@ -129,10 +136,7 @@ impl SdkType {
             "f32" | "c_float" => Self::Float,
             "f64" | "c_double" => Self::Double,
             "CStr" => Self::StringPtr,
-            _ => {
-                emit_error!(ty, "This type is not supported");
-                return None;
-            }
+            _ => Self::Named { name: type_name }
         })
     }
 
